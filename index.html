@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kesnand Satsang Report</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 15px;
+      font-size: 13px;
+      background: #e8e8e8;
+    }
+
+    /* ── Screen form ── */
+    #printArea {
+      background: white;
+      padding: 20px;
+      max-width: 700px;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+    }
+
+    #printArea h2 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    #printArea table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #printArea th,
+    #printArea td {
+      border: 1px solid #999;
+      padding: 5px 8px;
+      vertical-align: middle;
+    }
+
+    #printArea th {
+      width: 60%;
+      background-color: #f7f7f7;
+      font-weight: normal;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      border: none;
+      padding: 2px 4px;
+      font-size: 13px;
+      background: transparent;
+      text-align: center;
+      outline: none;
+    }
+
+    input[readonly] {
+      background-color: #f1f1f1;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    button {
+      padding: 7px 18px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      transition: background-color 0.2s;
+    }
+    button:hover          { background-color: #0056b3; }
+    #clearData            { background-color: crimson; }
+    #clearData:hover      { background-color: darkred; }
+    #downloadPDF          { background-color: #28a745; }
+    #downloadPDF:hover    { background-color: #1e7e34; }
+
+    /* ── Hidden element used ONLY for PDF rendering ── */
+    #pdfCapture {
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      background: white;
+      font-family: Arial, sans-serif;
+    }
+
+    #pdfCapture h2 {
+      text-align: center;
+      margin: 0 0 14px 0;
+    }
+
+    #pdfCapture table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #pdfCapture th,
+    #pdfCapture td {
+      border: 1px solid #333;
+      vertical-align: middle;
+    }
+
+    #pdfCapture th {
+      width: 60%;
+      background-color: #f0f0f0;
+      font-weight: normal;
+      text-align: left;
+    }
+
+    #pdfCapture td {
+      text-align: center;
+      font-weight: 600;
+    }
+
+    /* 🖨️ Print */
+    @media print {
+      body          { margin: 0; background: white; }
+      #printArea    { border: none; padding: 10px; max-width: 100%; }
+      #pdfCapture,
+      .button-group { display: none !important; }
+      input         { border: none !important; outline: none !important; }
+      input[readonly] { background: none !important; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── Visible interactive form ── -->
+  <div id="printArea">
+    <h2>RSSB Kesnand Satsang General Details</h2>
+    <table>
+      <tr><th>Name of Satsang Place</th>  <td><input type="text" id="satsangPlace" value="Kesnand" readonly></td></tr>
+      <tr><th>Satsang Date</th>            <td><input type="text" id="satsangDate"></td></tr>
+      <tr><th>Satsang Karta Name</th>      <td><input type="text" id="satsangKarta"></td></tr>
+      <tr><th>Pathi Name</th>              <td><input type="text" id="pathiName"></td></tr>
+      <tr><th>Name of Sant</th>            <td><input type="text" id="baniTaken"></td></tr>
+      <tr><th>Shabad Taken</th>            <td><input type="text" id="shabadTaken"></td></tr>
+      <tr><th>Shabads Started At</th>      <td><input type="text" id="shabadsStarted"></td></tr>
+      <tr><th>Satsang Started At</th>      <td><input type="text" id="satsangStarted"></td></tr>
+      <tr><th>Satsang Completed At</th>    <td><input type="text" id="satsangCompleted"></td></tr>
+      <tr><th>Attendance Adult Gents</th>  <td><input type="text" id="adultGents"></td></tr>
+      <tr><th>Attendance Adult Ladies</th> <td><input type="text" id="adultLadies"></td></tr>
+      <tr><th>Attendance Children</th>     <td><input type="text" id="children"></td></tr>
+      <tr><th>Sangat Attendance Total</th> <td><input type="text" id="totalAttendance" readonly></td></tr>
+      <tr><th>Sewadar Count Ladies</th>    <td><input type="text" id="sewadarLadies"></td></tr>
+      <tr><th>Sewadar Count Gents</th>     <td><input type="text" id="sewadarGents"></td></tr>
+      <tr><th>Sewadar Count Total</th>     <td><input type="text" id="totalSewadar" readonly></td></tr>
+      <tr><th>Co-ordinating Sewadar Name</th><td><input type="text" id="coordSewadar"></td></tr>
+      <tr><th>Car Count</th>               <td><input type="text" id="carCount"></td></tr>
+      <tr><th>E-Car Count</th>             <td><input type="text" id="eCarCount"></td></tr>
+      <tr><th>Rickshaw</th>                <td><input type="text" id="rickshaw"></td></tr>
+      <tr><th>E-Rickshaw</th>              <td><input type="text" id="eRickshaw"></td></tr>
+      <tr><th>Bike</th>                    <td><input type="text" id="bike"></td></tr>
+      <tr><th>Moped / Scooty</th>          <td><input type="text" id="scooty"></td></tr>
+      <tr><th>Cycles</th>                  <td><input type="text" id="cycles"></td></tr>
+      <tr><th>Bus</th>                     <td><input type="text" id="bus"></td></tr>
+      <tr><th>Truck</th>                   <td><input type="text" id="truck"></td></tr>
+      <tr><th>Tempo</th>                   <td><input type="text" id="tempo"></td></tr>
+      <tr><th>Total Vehicle Count</th>     <td><input type="text" id="totalVehicle" readonly></td></tr>
+    </table>
+  </div>
+
+  <!-- ── Hidden div rendered to PDF (uses plain text, no inputs) ── -->
+  <div id="pdfCapture">
+    <h2>RSSB Kesnand Satsang General Details</h2>
+    <table id="pdfTable"></table>
+  </div>
+
+  <div class="button-group">
+    <button type="button" id="saveBtn">💾 Submit &amp; Save</button>
+    <button type="button" onclick="window.print()">🖨️ Print</button>
+    <button type="button" id="downloadPDF">⬇️ Download PDF</button>
+    <button type="button" id="clearData">🧹 Clear Data</button>
+  </div>
+
+<script>
+  /* ── Data definitions ─────────────────────────────────────────── */
+  const fields = [
+    { id: "satsangPlace",   label: "Name of Satsang Place" },
+    { id: "satsangDate",    label: "Satsang Date" },
+    { id: "satsangKarta",   label: "Satsang Karta Name" },
+    { id: "pathiName",      label: "Pathi Name" },
+    { id: "baniTaken",      label: "Name of Sant" },
+    { id: "shabadTaken",    label: "Shabad Taken" },
+    { id: "shabadsStarted", label: "Shabads Started At" },
+    { id: "satsangStarted", label: "Satsang Started At" },
+    { id: "satsangCompleted",label:"Satsang Completed At" },
+    { id: "adultGents",     label: "Attendance Adult Gents" },
+    { id: "adultLadies",    label: "Attendance Adult Ladies" },
+    { id: "children",       label: "Attendance Children" },
+    { id: "totalAttendance",label: "Sangat Attendance Total" },
+    { id: "sewadarLadies",  label: "Sewadar Count Ladies" },
+    { id: "sewadarGents",   label: "Sewadar Count Gents" },
+    { id: "totalSewadar",   label: "Sewadar Count Total" },
+    { id: "coordSewadar",   label: "Co-ordinating Sewadar Name" },
+    { id: "carCount",       label: "Car Count" },
+    { id: "eCarCount",      label: "E-Car Count" },
+    { id: "rickshaw",       label: "Rickshaw" },
+    { id: "eRickshaw",      label: "E-Rickshaw" },
+    { id: "bike",           label: "Bike" },
+    { id: "scooty",         label: "Moped / Scooty" },
+    { id: "cycles",         label: "Cycles" },
+    { id: "bus",            label: "Bus" },
+    { id: "truck",          label: "Truck" },
+    { id: "tempo",          label: "Tempo" },
+    { id: "totalVehicle",   label: "Total Vehicle Count" }
+  ];
+
+  const vehicleIds = ["carCount","eCarCount","rickshaw","eRickshaw",
+                      "bike","scooty","cycles","bus","truck","tempo"];
+
+  /* ── Helpers ─────────────────────────────────────────────────── */
+  const $  = id => document.getElementById(id);
+  const iv = id => parseInt($( id )?.value) || 0;
+
+  function recalc() {
+    $("totalAttendance").value = iv("adultGents") + iv("adultLadies") + iv("children");
+    $("totalSewadar").value    = iv("sewadarGents") + iv("sewadarLadies");
+    $("totalVehicle").value    = vehicleIds.reduce((s,id) => s + iv(id), 0);
+  }
+
+  /* ── Live listeners ──────────────────────────────────────────── */
+  ["adultGents","adultLadies","children",
+   "sewadarGents","sewadarLadies",
+   ...vehicleIds].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener("input", recalc);
+  });
+
+  /* ── Load saved data ─────────────────────────────────────────── */
+  window.onload = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("satsangData") || "{}");
+      fields.forEach(({ id }) => {
+        const el = $(id);
+        if (el && !el.hasAttribute("readonly") && saved[id] != null)
+          el.value = saved[id];
+      });
+    } catch(e) {}
+    recalc();
+  };
+
+  /* ── Save ────────────────────────────────────────────────────── */
+  $("saveBtn").addEventListener("click", () => {
+    recalc();
+    const data = {};
+    fields.forEach(({ id }) => { const el=$(id); if(el) data[id]=el.value; });
+    localStorage.setItem("satsangData", JSON.stringify(data));
+    alert("✅ Data saved!");
+  });
+
+  /* ── Clear ───────────────────────────────────────────────────── */
+  $("clearData").addEventListener("click", () => {
+    if (!confirm("Clear all data?")) return;
+    localStorage.removeItem("satsangData");
+    fields.forEach(({ id }) => {
+      const el = $(id);
+      if (el && !el.hasAttribute("readonly")) el.value = "";
+    });
+    recalc();
+    alert("🧹 Cleared!");
+  });
+
+  /* ── Download PDF ────────────────────────────────────────────── */
+  $("downloadPDF").addEventListener("click", async function () {
+    recalc();
+
+    const btn = this;
+    btn.disabled    = true;
+    btn.textContent = "⏳ Generating…";
+
+    try {
+      /* 1. Build filename */
+      const t  = new Date();
+      const dd = String(t.getDate()).padStart(2,"0");
+      const mm = String(t.getMonth()+1).padStart(2,"0");
+      const yy = t.getFullYear();
+      const fileName = `${dd}-${mm}-${yy}_RSSB_Kesnand_Satsang_Details.pdf`;
+
+      /* 2. Fill hidden table with plain text (no <input>) */
+      const tbl = $("pdfTable");
+      tbl.innerHTML = "";
+      fields.forEach(({ id, label }) => {
+        const val = $(id)?.value ?? "";
+        const tr  = document.createElement("tr");
+        tr.innerHTML = `<th>${label}</th><td>${val}</td>`;
+        tbl.appendChild(tr);
+      });
+
+      /* 3. Size the capture element to exactly A4 usable width
+            A4 usable = 210mm - 2×15mm margin = 180mm
+            At screen 96 dpi: 180 × (96/25.4) ≈ 680 px               */
+      const pxPerMm   = 96 / 25.4;
+      const a4UsableW = 180;          // mm
+      const capturePx = Math.round(a4UsableW * pxPerMm);  // ≈ 680 px
+
+      const cap = $("pdfCapture");
+      cap.style.width   = capturePx + "px";
+      cap.style.padding = "24px 28px";
+
+      /* row height: auto — let browser size it naturally */
+      Array.from(tbl.querySelectorAll("th, td")).forEach(cell => {
+        cell.style.padding  = "5px 8px";
+        cell.style.fontSize = "12px";
+      });
+      cap.querySelector("h2").style.fontSize = "15px";
+
+      /* 4. Wait for reflow */
+      await new Promise(r => setTimeout(r, 150));
+
+      /* 5. Capture at 3× scale for sharpness */
+      const canvas = await html2canvas(cap, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false
+      });
+
+      /* 6. Build PDF — image fills A4 width, paginate if tall */
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
+
+      const pageW  = 210, pageH  = 297;
+      const mX     = 15,  mTop   = 15, mBot = 15;
+      const useW   = pageW - mX * 2;            // 180 mm
+      const useH   = pageH - mTop - mBot;        // 267 mm
+
+      const imgW   = useW;
+      const imgH   = (canvas.height / canvas.width) * imgW;
+
+      let remaining = imgH;
+      let srcY      = 0;
+      let firstPage = true;
+
+      while (remaining > 0) {
+        if (!firstPage) pdf.addPage();
+        firstPage = false;
+
+        const sliceH    = Math.min(remaining, useH);
+        const srcSliceH = (sliceH / imgH) * canvas.height;
+
+        const slice       = document.createElement("canvas");
+        slice.width       = canvas.width;
+        slice.height      = Math.ceil(srcSliceH);
+        const ctx = slice.getContext("2d");
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, slice.width, slice.height);
+        ctx.drawImage(canvas,
+          0, srcY, canvas.width, srcSliceH,
+          0, 0,    canvas.width, srcSliceH);
+
+        pdf.addImage(slice.toDataURL("image/png"), "PNG",
+          mX, mTop, imgW, sliceH,
+          undefined, "FAST");
+
+        srcY      += srcSliceH;
+        remaining -= sliceH;
+      }
+
+      pdf.save(fileName);
+
+    } catch (err) {
+      alert("❌ PDF failed: " + err.message);
+      console.error(err);
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = "⬇️ Download PDF";
+    }
+  });
+</script>
+
+</body>
+</html>
