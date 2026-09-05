@@ -550,18 +550,11 @@
 <script>
   /* ── Configuration ──────────────────────────────────────────── */
   // Use the same origin (works when served from the same server)
-  const API_BASE = window.location.origin;
-  const API_PORT = 3000;
+const API_BASE = 'https://report-maker-2zlu.onrender.com';
 
-  // Helper: build API URL
-  function apiUrl(path) {
-    // If we're on port 3000 (server hosting the page), use same origin
-    if (window.location.port === String(API_PORT)) {
-      return `${API_BASE}${path}`;
-    }
-    // Otherwise, hit port 3000 explicitly
-    return `${window.location.protocol}//${window.location.hostname}:${API_PORT}${path}`;
-  }
+function apiUrl(path) {
+  return `${API_BASE}${path}`;
+}
 
   /* ── Data definitions ─────────────────────────────────────────── */
   const fields = [
@@ -640,28 +633,22 @@
 
   /* ── API Functions ──────────────────────────────────────────── */
   async function checkConnection() {
-    try {
-      const res = await fetch(apiUrl('/api/health'));
-      if (res.ok) {
-        $('dbStatus').className = 'status-indicator status-online';
-        $('dbStatus').textContent = 'Connected';
-        return true;
-      }
-    } catch (e) {
-      // Try alternative port
-      try {
-        const res = await fetch(`${window.location.protocol}//${window.location.hostname}:${API_PORT}/api/health`);
-        if (res.ok) {
-          $('dbStatus').className = 'status-indicator status-online';
-          $('dbStatus').textContent = 'Connected';
-          return true;
-        }
-      } catch (e2) {}
+  try {
+    const res = await fetch(apiUrl('/api/health'));
+
+    if (res.ok) {
+      $('dbStatus').className = 'status-indicator status-online';
+      $('dbStatus').textContent = 'Connected';
+      return true;
     }
-    $('dbStatus').className = 'status-indicator status-offline';
-    $('dbStatus').textContent = 'Offline';
-    return false;
+  } catch (e) {
+    console.error('Backend connection failed:', e);
   }
+
+  $('dbStatus').className = 'status-indicator status-offline';
+  $('dbStatus').textContent = 'Offline';
+  return false;
+}
 
   async function fetchReports(endpoint = '/api/reports') {
     try {
