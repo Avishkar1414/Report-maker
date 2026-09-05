@@ -1,0 +1,5 @@
+{
+  "name": "satsang-report-maker",
+  "path": ".",
+  "runtime": "node18"
+}

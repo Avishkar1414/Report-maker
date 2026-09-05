@@ -18,6 +18,44 @@
       background: #e8e8e8;
     }
 
+    /* ── Header ── */
+    .header {
+      max-width: 700px;
+      margin: 0 auto 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .header-btn {
+      padding: 6px 12px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .header-btn:hover { background: #5a6268; }
+    .header-btn.history-btn { background: #17a2b8; }
+    .header-btn.history-btn:hover { background: #138496; }
+    .header-btn.new-btn { background: #28a745; }
+    .header-btn.new-btn:hover { background: #218838; }
+
     /* ── Screen form ── */
     #printArea {
       background: white;
@@ -51,7 +89,8 @@
       font-weight: normal;
     }
 
-    input[type="text"] {
+    input[type="text"],
+    input[type="date"] {
       width: 100%;
       border: none;
       padding: 2px 4px;
@@ -93,6 +132,8 @@
     #clearData:hover      { background-color: darkred; }
     #downloadPDF          { background-color: #28a745; }
     #downloadPDF:hover    { background-color: #1e7e34; }
+    #saveBtn              { background-color: #17a2b8; }
+    #saveBtn:hover        { background-color: #138496; }
 
     /* ── Hidden element used ONLY for PDF rendering ── */
     #pdfCapture {
@@ -131,12 +172,266 @@
       font-weight: 600;
     }
 
+    /* ── History Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 8px;
+      max-width: 900px;
+      width: 95%;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      background: #343a40;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+    .modal-close:hover { color: #ccc; }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* Search Bar */
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .search-bar input {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .search-bar button {
+      padding: 8px 16px;
+    }
+
+    /* Records Table */
+    .records-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .records-table th,
+    .records-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .records-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .records-table tr:hover {
+      background: #f5f5f5;
+      cursor: pointer;
+    }
+
+    .records-table .actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    .records-table .actions button {
+      padding: 4px 10px;
+      font-size: 11px;
+    }
+
+    .btn-view { background: #17a2b8; }
+    .btn-view:hover { background: #138496; }
+    .btn-edit { background: #ffc107; color: #333; }
+    .btn-edit:hover { background: #e0a800; }
+    .btn-delete { background: #dc3545; }
+    .btn-delete:hover { background: #c82333; }
+
+    /* Manual Date Entry */
+    .manual-date-section {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .manual-date-section h4 {
+      margin: 0 0 10px 0;
+      color: #856404;
+    }
+
+    .manual-date-section label {
+      display: block;
+      margin-bottom: 5px;
+      color: #856404;
+    }
+
+    .manual-date-section input {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    /* ── Status indicator ── */
+    .status-indicator {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .status-online { background: #d4edda; color: #155724; }
+    .status-offline { background: #f8d7da; color: #721c24; }
+    .status-saving { background: #fff3cd; color: #856404; }
+
+    /* ── Toast notification ── */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 4px;
+      color: white;
+      font-size: 13px;
+      z-index: 2000;
+      animation: slideIn 0.3s ease;
+    }
+    .toast.success { background: #28a745; }
+    .toast.error { background: #dc3545; }
+    .toast.info { background: #17a2b8; }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+
+    .empty-state p {
+      margin: 0 0 15px 0;
+    }
+
+    /* ── Loading state ── */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    /* ── Connection status bar ── */
+    .connection-bar {
+      max-width: 700px;
+      margin: 0 auto 10px;
+      padding: 8px 15px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    /* ── Current record indicator ── */
+    .current-record {
+      background: #e7f3ff;
+      border: 1px solid #b8daff;
+      border-radius: 4px;
+      padding: 10px 15px;
+      margin-bottom: 10px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      display: none;
+    }
+
+    .current-record.active {
+      display: block;
+    }
+
+    .current-record strong {
+      color: #004085;
+    }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 15px;
+    }
+
+    .pagination button {
+      padding: 5px 12px;
+      font-size: 12px;
+    }
+
+    .pagination button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     /* 🖨️ Print */
     @media print {
       body          { margin: 0; background: white; }
       #printArea    { border: none; padding: 10px; max-width: 100%; }
       #pdfCapture,
-      .button-group { display: none !important; }
+      .button-group,
+      .header,
+      .connection-bar,
+      .current-record { display: none !important; }
       input         { border: none !important; outline: none !important; }
       input[readonly] { background: none !important; }
     }
@@ -144,6 +439,26 @@
 </head>
 
 <body>
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <h1>📊 RSSB Kesnand Satsang Report</h1>
+    <div class="header-actions">
+      <button class="header-btn new-btn" onclick="createNewReport()">➕ New Entry</button>
+      <button class="header-btn history-btn" onclick="openHistoryModal()">📋 View Records</button>
+    </div>
+  </div>
+
+  <!-- ── Connection Status ── -->
+  <div class="connection-bar">
+    <span>Database Status: <span id="dbStatus" class="status-indicator status-offline">Checking...</span></span>
+    <span id="currentRecordInfo"></span>
+  </div>
+
+  <!-- ── Current Record Indicator ── -->
+  <div class="current-record" id="currentRecord">
+    <strong>📝 Editing Record #<span id="currentRecordId"></span></strong> — Date: <span id="currentRecordDate"></span>
+  </div>
 
   <!-- ── Visible interactive form ── -->
   <div id="printArea">
@@ -191,13 +506,63 @@
   </div>
 
   <div class="button-group">
-    <button type="button" id="saveBtn">💾 Submit &amp; Save</button>
+    <button type="button" id="saveBtn">💾 Submit &amp; Save to DB</button>
     <button type="button" onclick="window.print()">🖨️ Print</button>
     <button type="button" id="downloadPDF">⬇️ Download PDF</button>
-    <button type="button" id="clearData">🧹 Clear Data</button>
+    <button type="button" id="clearData">🧹 Clear Form</button>
+  </div>
+
+  <!-- ── History Modal ── -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>📋 Report History</h3>
+        <button class="modal-close" onclick="closeHistoryModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Manual Date Entry Section -->
+        <div class="manual-date-section">
+          <h4>📅 Add Past Entry</h4>
+          <label for="manualDate">Enter date for manual/past entry:</label>
+          <input type="date" id="manualDate" placeholder="Select or enter date">
+          <button class="header-btn new-btn" onclick="loadManualDate()">Load for Editing</button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+          <input type="date" id="searchStartDate" placeholder="Start Date">
+          <input type="date" id="searchEndDate" placeholder="End Date">
+          <button onclick="searchRecords()">🔍 Search</button>
+          <button onclick="loadAllRecords()">📋 Show All</button>
+        </div>
+
+        <!-- Records Table -->
+        <div id="recordsContainer">
+          <div class="loading">Loading records...</div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
   </div>
 
 <script>
+  /* ── Configuration ──────────────────────────────────────────── */
+  // Use the same origin (works when served from the same server)
+  const API_BASE = window.location.origin;
+  const API_PORT = 3000;
+
+  // Helper: build API URL
+  function apiUrl(path) {
+    // If we're on port 3000 (server hosting the page), use same origin
+    if (window.location.port === String(API_PORT)) {
+      return `${API_BASE}${path}`;
+    }
+    // Otherwise, hit port 3000 explicitly
+    return `${window.location.protocol}//${window.location.hostname}:${API_PORT}${path}`;
+  }
+
   /* ── Data definitions ─────────────────────────────────────────── */
   const fields = [
     { id: "satsangPlace",   label: "Name of Satsang Place" },
@@ -237,10 +602,27 @@
   const vehicleIds = ["carCount","eCarCount","rickshaw","eRickshaw",
                       "bike","ebike","escooty","scooty","cycles","bus","truck","tempo"];
 
+  /* ── State ─────────────────────────────────────────────────── */
+  let currentRecordId = null;
+
   /* ── Helpers ─────────────────────────────────────────────────── */
   const $  = id => document.getElementById(id);
   const iv = id => parseInt($( id )?.value) || 0;
 
+  /* ── Toast notifications ─────────────────────────────────────── */
+  function showToast(message, type = 'info') {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  /* ── Recalculate totals ─────────────────────────────────────────── */
   function recalc() {
     $("totalAttendance").value = iv("adultGents") + iv("adultLadies") + iv("children");
     $("totalSewadar").value    = iv("sewadarGents") + iv("sewadarLadies") + iv("guidesewadarBoys") + iv("guidesewadarGirls");
@@ -256,92 +638,392 @@
     if (el) el.addEventListener("input", recalc);
   });
 
-  /* ── Load saved data ─────────────────────────────────────────── */
-  window.onload = () => {
+  /* ── API Functions ──────────────────────────────────────────── */
+  async function checkConnection() {
     try {
-      const saved = JSON.parse(localStorage.getItem("satsangData") || "{}");
-      fields.forEach(({ id }) => {
-        const el = $(id);
-        if (el && !el.hasAttribute("readonly") && saved[id] != null)
-          el.value = saved[id];
-      });
-    } catch(e) {}
-    recalc();
-  };
+      const res = await fetch(apiUrl('/api/health'));
+      if (res.ok) {
+        $('dbStatus').className = 'status-indicator status-online';
+        $('dbStatus').textContent = 'Connected';
+        return true;
+      }
+    } catch (e) {
+      // Try alternative port
+      try {
+        const res = await fetch(`${window.location.protocol}//${window.location.hostname}:${API_PORT}/api/health`);
+        if (res.ok) {
+          $('dbStatus').className = 'status-indicator status-online';
+          $('dbStatus').textContent = 'Connected';
+          return true;
+        }
+      } catch (e2) {}
+    }
+    $('dbStatus').className = 'status-indicator status-offline';
+    $('dbStatus').textContent = 'Offline';
+    return false;
+  }
 
-  /* ── Save ────────────────────────────────────────────────────── */
-  $("saveBtn").addEventListener("click", () => {
+  async function fetchReports(endpoint = '/api/reports') {
+    try {
+      const res = await fetch(apiUrl(endpoint));
+      if (!res.ok) throw new Error('Failed to fetch');
+      return await res.json();
+    } catch (e) {
+      console.error('Fetch error:', e);
+      return [];
+    }
+  }
+
+  async function saveReport() {
     recalc();
     const data = {};
-    fields.forEach(({ id }) => { const el=$(id); if(el) data[id]=el.value; });
-    localStorage.setItem("satsangData", JSON.stringify(data));
-    alert("✅ Data saved!");
-  });
+    fields.forEach(({ id }) => { const el = $(id); if (el) data[id] = el.value; });
 
-  /* ── Clear ───────────────────────────────────────────────────── */
-  $("clearData").addEventListener("click", () => {
-    if (!confirm("Clear all data?")) return;
-    localStorage.removeItem("satsangData");
+    $('saveBtn').disabled = true;
+    $('saveBtn').textContent = '⏳ Saving...';
+
+    try {
+      const res = await fetch(apiUrl('/api/reports'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        // Normalize the response ID (CockroachDB returns BIGINT as string)
+        const newId = result.report?.id ? String(result.report.id) : currentRecordId;
+        currentRecordId = newId;
+        updateCurrentRecordIndicator();
+
+        if (result.updated) {
+          showToast('✅ Report updated successfully!', 'success');
+        } else {
+          showToast('✅ Report saved successfully! ID: ' + newId, 'success');
+        }
+      } else {
+        throw new Error(result.error || 'Save failed');
+      }
+    } catch (e) {
+      showToast('❌ Error: ' + e.message, 'error');
+    } finally {
+      $('saveBtn').disabled = false;
+      $('saveBtn').textContent = '💾 Submit & Save to DB';
+    }
+  }
+
+  function loadReportData(data) {
+    if (!data) {
+      console.error('loadReportData: no data provided');
+      return;
+    }
+    console.log('Loading report data:', data);
+
     fields.forEach(({ id }) => {
       const el = $(id);
-      if (el && !el.hasAttribute("readonly")) el.value = "";
+      if (el && !el.hasAttribute('readonly')) {
+        // Try multiple key variants (camelCase, lowercase, snake_case)
+        const value =
+          data[id] ??
+          data[id.toLowerCase()] ??
+          data[id.toUpperCase()] ??
+          '';
+        el.value = value;
+        console.log(`Setting ${id} = "${value}"`);
+      }
     });
     recalc();
-    alert("🧹 Cleared!");
-  });
+    showToast('✅ Report loaded successfully!', 'success');
+  }
+
+  function clearForm() {
+    if (!confirm("Clear all data from form?")) return;
+    currentRecordId = null;
+    fields.forEach(({ id }) => {
+      const el = $(id);
+      if (el && !el.hasAttribute('readonly')) el.value = '';
+    });
+    recalc();
+    updateCurrentRecordIndicator();
+    showToast('🧹 Form cleared!', 'info');
+  }
+
+  function createNewReport() {
+    currentRecordId = null;
+    fields.forEach(({ id }) => {
+      const el = $(id);
+      if (el && !el.hasAttribute('readonly')) el.value = '';
+    });
+    recalc();
+    updateCurrentRecordIndicator();
+    setTodayDate();
+    showToast('➕ Ready for new entry', 'info');
+  }
+
+  function updateCurrentRecordIndicator() {
+    const indicator = $('currentRecord');
+    const dateEl = $('currentRecordDate');
+    const idEl = $('currentRecordId');
+
+    if (currentRecordId) {
+      indicator.classList.add('active');
+      idEl.textContent = currentRecordId;
+      dateEl.textContent = $('satsangDate')?.value || 'N/A';
+    } else {
+      indicator.classList.remove('active');
+    }
+  }
+
+  function setTodayDate() {
+    const today = new Date();
+    const day = today.getDay();
+
+    if (day === 0 || day === 2) {
+      const dd = String(today.getDate()).padStart(2, "0");
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const yyyy = today.getFullYear();
+      $("satsangDate").value = `${dd}-${mm}-${yyyy}`;
+    }
+  }
+
+  /* ── History Modal Functions ──────────────────────────────────── */
+  let currentPage = 1;
+  const pageSize = 20;
+
+  function openHistoryModal() {
+    $('historyModal').classList.add('active');
+    loadAllRecords();
+  }
+
+  function closeHistoryModal() {
+    $('historyModal').classList.remove('active');
+  }
+
+  async function loadAllRecords() {
+    $('searchStartDate').value = '';
+    $('searchEndDate').value = '';
+    currentPage = 1;
+    await fetchAndDisplayRecords('/api/reports');
+  }
+
+  async function searchRecords() {
+    const startDate = $('searchStartDate').value;
+    const endDate = $('searchEndDate').value;
+    currentPage = 1;
+
+    let endpoint = '/api/reports?';
+    if (startDate) endpoint += `startDate=${formatDateForDB(startDate)}&`;
+    if (endDate) endpoint += `endDate=${formatDateForDB(endDate)}`;
+
+    await fetchAndDisplayRecords(endpoint);
+  }
+
+  async function fetchAndDisplayRecords(endpoint) {
+    const container = $('recordsContainer');
+    container.innerHTML = '<div class="loading">Loading records...</div>';
+
+    try {
+      const records = await fetchReports(endpoint);
+      displayRecords(records);
+    } catch (e) {
+      container.innerHTML = '<div class="empty-state"><p>Failed to load records</p></div>';
+    }
+  }
+
+  function displayRecords(records) {
+    const container = $('recordsContainer');
+
+    if (!records || records.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <p>📭 No records found</p>
+          <small>Create your first report using the form above</small>
+        </div>
+      `;
+      $('pagination').innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.ceil(records.length / pageSize);
+    const startIdx = (currentPage - 1) * pageSize;
+    const pageRecords = records.slice(startIdx, startIdx + pageSize);
+
+    // Normalize field access (DB returns lowercase, support both)
+    const get = (rec, field) => rec[field] ?? rec[field.toLowerCase()] ?? '';
+
+    container.innerHTML = `
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Karta</th>
+            <th>Attendance</th>
+            <th>Vehicles</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pageRecords.map(r => {
+            const id = String(r.id);
+            return `
+            <tr onclick="loadReportById('${id}')">
+              <td>#${id}</td>
+              <td>${get(r, 'satsangDate') || '-'}</td>
+              <td>${get(r, 'satsangKarta') || '-'}</td>
+              <td>${get(r, 'totalAttendance') || 0}</td>
+              <td>${get(r, 'totalVehicle') || 0}</td>
+              <td class="actions" onclick="event.stopPropagation()">
+                <button class="btn-view" onclick="loadReportById('${id}')">View</button>
+                <button class="btn-edit" onclick="editReportById('${id}')">Edit</button>
+                <button class="btn-delete" onclick="deleteReportById('${id}')">Delete</button>
+              </td>
+            </tr>
+          `;}).join('')}
+        </tbody>
+      </table>
+    `;
+
+    // Render pagination
+    renderPagination(totalPages);
+  }
+
+  function renderPagination(totalPages) {
+    const pagination = $('pagination');
+    if (totalPages <= 1) {
+      pagination.innerHTML = '';
+      return;
+    }
+
+    let html = '';
+    if (currentPage > 1) {
+      html += `<button onclick="goToPage(${currentPage - 1})">← Prev</button>`;
+    }
+    html += `<span style="padding: 5px 15px;">Page ${currentPage} of ${totalPages}</span>`;
+    if (currentPage < totalPages) {
+      html += `<button onclick="goToPage(${currentPage + 1})">Next →</button>`;
+    }
+    pagination.innerHTML = html;
+  }
+
+  async function goToPage(page) {
+    currentPage = page;
+    await loadAllRecords();
+  }
+
+  async function loadReportById(id) {
+    try {
+      const res = await fetch(apiUrl(`/api/reports/${id}`));
+      if (!res.ok) throw new Error('Report not found');
+      const data = await res.json();
+      console.log('API returned:', data);
+      loadReportData(data);
+      currentRecordId = String(id);
+      updateCurrentRecordIndicator();
+      closeHistoryModal();
+    } catch (e) {
+      showToast('❌ Error loading report: ' + e.message, 'error');
+      console.error('Load error:', e);
+    }
+  }
+
+  async function editReportById(id) {
+    await loadReportById(id);
+  }
+
+  async function deleteReportById(id) {
+    if (!confirm(`Delete report #${id}? This cannot be undone.`)) return;
+
+    try {
+      const res = await fetch(apiUrl(`/api/reports/${id}`), {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        showToast('🗑️ Report deleted', 'success');
+        if (String(currentRecordId) === String(id)) {
+          currentRecordId = null;
+          updateCurrentRecordIndicator();
+        }
+        loadAllRecords();
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (e) {
+      showToast('❌ Error deleting report', 'error');
+      console.error('Delete error:', e);
+    }
+  }
+
+  function loadManualDate() {
+    const dateInput = $('manualDate').value;
+    if (!dateInput) {
+      showToast('Please enter a date', 'error');
+      return;
+    }
+    const formattedDate = formatDateForDB(dateInput);
+    $('satsangDate').value = formattedDate;
+    currentRecordId = null;
+    updateCurrentRecordIndicator();
+    closeHistoryModal();
+    showToast(`📅 Date set to ${formattedDate}`, 'info');
+  }
+
+  function formatDateForDB(dateStr) {
+    // Convert YYYY-MM-DD to DD-MM-YYYY
+    if (dateStr.includes('-')) {
+      const parts = dateStr.split('-');
+      if (parts[0].length === 4) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
+    return dateStr;
+  }
 
   /* ── Download PDF ────────────────────────────────────────────── */
   $("downloadPDF").addEventListener("click", async function () {
     recalc();
 
     const btn = this;
-    btn.disabled    = true;
+    btn.disabled = true;
     btn.textContent = "⏳ Generating…";
 
     try {
-      /* 1. Build filename */
       const t  = new Date();
       const dd = String(t.getDate()).padStart(2,"0");
       const mm = String(t.getMonth()+1).padStart(2,"0");
       const yy = t.getFullYear();
       const fileName = `${dd}-${mm}-${yy}_RSSB_Kesnand_Satsang_Details.pdf`;
 
-      /* 2. Fill hidden table with plain text (no <input>) */
       const tbl = $("pdfTable");
       tbl.innerHTML = "";
       fields.forEach(({ id, label }) => {
         let val = $(id)?.value ?? "";
-
-if (vehicleIds.includes(id) && val.trim() === "") {
-  val = "0";
-}
+        if (vehicleIds.includes(id) && val.trim() === "") {
+          val = "0";
+        }
         const tr  = document.createElement("tr");
         tr.innerHTML = `<th>${label}</th><td>${val}</td>`;
         tbl.appendChild(tr);
       });
 
-      /* 3. Size the capture element to exactly A4 usable width
-            A4 usable = 210mm - 2×15mm margin = 180mm
-            At screen 96 dpi: 180 × (96/25.4) ≈ 680 px               */
       const pxPerMm   = 96 / 25.4;
-      const a4UsableW = 180;          // mm
-      const capturePx = Math.round(a4UsableW * pxPerMm);  // ≈ 680 px
+      const a4UsableW = 180;
+      const capturePx = Math.round(a4UsableW * pxPerMm);
 
       const cap = $("pdfCapture");
       cap.style.width   = capturePx + "px";
       cap.style.padding = "24px 28px";
 
-      /* row height: auto — let browser size it naturally */
       Array.from(tbl.querySelectorAll("th, td")).forEach(cell => {
         cell.style.padding  = "5px 8px";
         cell.style.fontSize = "12px";
       });
       cap.querySelector("h2").style.fontSize = "15px";
 
-      /* 4. Wait for reflow */
       await new Promise(r => setTimeout(r, 150));
 
-      /* 5. Capture at 3× scale for sharpness */
       const canvas = await html2canvas(cap, {
         scale: 3,
         useCORS: true,
@@ -349,14 +1031,13 @@ if (vehicleIds.includes(id) && val.trim() === "") {
         logging: false
       });
 
-      /* 6. Build PDF — image fills A4 width, paginate if tall */
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
 
       const pageW  = 210, pageH  = 297;
       const mX     = 15,  mTop   = 15, mBot = 15;
-      const useW   = pageW - mX * 2;            // 180 mm
-      const useH   = pageH - mTop - mBot;        // 267 mm
+      const useW   = pageW - mX * 2;
+      const useH   = pageH - mTop - mBot;
 
       const imgW   = useW;
       const imgH   = (canvas.height / canvas.width) * imgW;
@@ -393,25 +1074,40 @@ if (vehicleIds.includes(id) && val.trim() === "") {
       pdf.save(fileName);
 
     } catch (err) {
-      alert("❌ PDF failed: " + err.message);
+      showToast("❌ PDF failed: " + err.message, 'error');
       console.error(err);
     } finally {
-      btn.disabled    = false;
+      btn.disabled = false;
       btn.textContent = "⬇️ Download PDF";
     }
   });
-  const today = new Date();
-const day = today.getDay();
 
-if (day === 0 || day === 2) {
-  const dd = String(today.getDate()).padStart(2, "0");
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const yyyy = today.getFullYear();
+  /* ── Clear ────────────────────────────────────────────────────── */
+  $("clearData").addEventListener("click", clearForm);
 
-  $("satsangDate").value = `${dd}-${mm}-${yyyy}`;
-} else {
-  $("satsangDate").value = "";
-}
+  /* ── Save ────────────────────────────────────────────────────── */
+  $("saveBtn").addEventListener("click", saveReport);
+
+  /* ── Initialize ─────────────────────────────────────────────── */
+  window.onload = () => {
+    // Check database connection
+    checkConnection();
+    setInterval(checkConnection, 30000); // Check every 30 seconds
+
+    // Set today's date if applicable
+    setTodayDate();
+    recalc();
+  };
+
+  // Close modal on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeHistoryModal();
+  });
+
+  // Close modal on overlay click
+  $('historyModal').addEventListener('click', (e) => {
+    if (e.target.id === 'historyModal') closeHistoryModal();
+  });
 </script>
 
 </body>
