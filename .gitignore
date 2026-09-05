@@ -14,6 +14,9 @@ logs
 .vscode/
 .idea/
 
+# Claude Code settings (contains API keys!)
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db
