@@ -9,6 +9,7 @@ npm-debug.log*
 # Logs
 logs
 *.log
+*.backup
 
 # IDE
 .vscode/

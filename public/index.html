@@ -684,7 +684,7 @@
       const result = await res.json();
 
       if (res.ok) {
-        // Normalize the response ID (CockroachDB returns BIGINT as string)
+        // Use the MongoDB ID returned by the API for subsequent edits.
         const newId = result.report?.id ? String(result.report.id) : currentRecordId;
         currentRecordId = newId;
         updateCurrentRecordIndicator();
