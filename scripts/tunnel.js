@@ -2,21 +2,24 @@ require('dotenv').config();
 
 const { spawn } = require('child_process');
 
-const allowedEmail = process.env.TUNNEL_ALLOWED_EMAIL?.trim();
+const allowedEmails = (process.env.TUNNEL_ALLOWED_EMAIL || '')
+  .split(',')
+  .map((email) => email.trim())
+  .filter(Boolean);
 const emailPattern = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+const invalidEmails = allowedEmails.filter((email) => !emailPattern.test(email));
 
-if (!allowedEmail || !emailPattern.test(allowedEmail)) {
-  console.error('Set a valid TUNNEL_ALLOWED_EMAIL in .env before starting the tunnel.');
+if (allowedEmails.length === 0 || invalidEmails.length > 0) {
+  console.error('Set one or more valid, comma-separated emails in TUNNEL_ALLOWED_EMAIL in .env.');
   process.exit(1);
 }
 
 const tunnelArgs = [
   'tunnel',
   '--url',
-  `http://localhost:${process.env.PORT || 3000}`,
-  '--allowed-mail',
-  allowedEmail
+  `http://localhost:${process.env.PORT || 3000}`
 ];
+for (const email of allowedEmails) tunnelArgs.push('--allowed-mail', email);
 
 // The Windows npm shim is a script rather than a native executable. Invoke it
 // through PowerShell with quoted arguments instead of child_process shell mode.
