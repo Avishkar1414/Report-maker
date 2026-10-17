@@ -330,6 +330,7 @@
     }
     .status-online { background: #d4edda; color: #155724; }
     .status-offline { background: #f8d7da; color: #721c24; }
+    .status-local { background: #fff3cd; color: #765900; }
     .status-saving { background: #fff3cd; color: #856404; }
 
     /* ── Toast notification ── */
@@ -451,8 +452,8 @@
 
   <!-- ── Connection Status ── -->
   <div class="connection-bar">
-    <span>Database Status: <span id="dbStatus" class="status-indicator status-offline">Checking...</span></span>
-    <span id="currentRecordInfo"></span>
+    <span>Storage: <span id="dbStatus" class="status-indicator status-offline">Checking...</span></span>
+    <span id="storageInfo">Checking whether laptop storage is available…</span>
   </div>
 
   <!-- ── Current Record Indicator ── -->
@@ -506,7 +507,7 @@
   </div>
 
   <div class="button-group">
-    <button type="button" id="saveBtn">💾 Submit &amp; Save to DB</button>
+    <button type="button" id="saveBtn" disabled>💾 Checking storage…</button>
     <button type="button" onclick="window.print()">🖨️ Print</button>
     <button type="button" id="downloadPDF">⬇️ Download PDF</button>
     <button type="button" id="clearData">🧹 Clear Form</button>
@@ -554,6 +555,7 @@
   const API_BASE = (window.location.protocol === 'file:')
     ? 'http://localhost:3000'
     : '';
+  const FORCE_DEVICE_STORAGE = window.location.hostname.endsWith('.vercel.app');
 
   function apiUrl(path) {
     return `${API_BASE}${path}`;
@@ -600,6 +602,9 @@
 
   /* ── State ─────────────────────────────────────────────────── */
   let currentRecordId = null;
+  let storageMode = 'detecting';
+  let isSaving = false;
+  const LOCAL_REPORTS_KEY = 'rssb-kesnand-reports-v1';
 
   /* ── Helpers ─────────────────────────────────────────────────── */
   const $  = id => document.getElementById(id);
@@ -635,27 +640,106 @@
   });
 
   /* ── API Functions ──────────────────────────────────────────── */
-  async function checkConnection() {
+  function setStorageMode(mode) {
+    storageMode = mode;
+    const databaseAvailable = mode === 'database';
+    $('dbStatus').className = `status-indicator ${databaseAvailable ? 'status-online' : 'status-local'}`;
+    $('dbStatus').textContent = databaseAvailable ? 'Laptop database' : 'This device';
+    $('storageInfo').textContent = databaseAvailable
+      ? 'Saving here sends reports to MongoDB on the laptop.'
+      : 'Reports stay in this browser on this device. Download the PDF to keep a file.';
+    if (!isSaving) {
+      setSaveButtonLabel();
+      $('saveBtn').disabled = false;
+    }
+  }
+
+  function setSaveButtonLabel() {
+    $('saveBtn').textContent = storageMode === 'database'
+      ? '💾 Submit & Save to laptop database'
+      : '💾 Save on this device';
+  }
+
+  function readLocalReports() {
     try {
-      const res = await fetch(apiUrl('/api/health'), { cache: 'no-store' });
+      const reports = JSON.parse(localStorage.getItem(LOCAL_REPORTS_KEY) || '[]');
+      return Array.isArray(reports) ? reports : [];
+    } catch (error) {
+      console.error('Could not read reports stored on this device:', error);
+      return [];
+    }
+  }
+
+  function writeLocalReports(reports) {
+    try {
+      localStorage.setItem(LOCAL_REPORTS_KEY, JSON.stringify(reports));
+    } catch {
+      throw new Error('Browser storage is unavailable or full. Download the PDF before closing this page.');
+    }
+  }
+
+  function reportDateAsIso(value) {
+    const parts = String(value || '').trim().split(/[-/]/);
+    if (parts.length !== 3) return '';
+    if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+  }
+
+  function getLocalReportsForSearch(endpoint) {
+    const url = new URL(apiUrl(endpoint), window.location.href);
+    const startDate = reportDateAsIso(url.searchParams.get('startDate'));
+    const endDate = reportDateAsIso(url.searchParams.get('endDate'));
+    return readLocalReports()
+      .filter(report => {
+        const date = reportDateAsIso(report.satsangDate);
+        return (!startDate || date >= startDate) && (!endDate || date <= endDate);
+      })
+      .sort((a, b) => reportDateAsIso(b.satsangDate).localeCompare(reportDateAsIso(a.satsangDate)));
+  }
+
+  function saveReportLocally(data) {
+    const reports = readLocalReports();
+    const existingIndex = reports.findIndex(report =>
+      (currentRecordId && String(report.id) === String(currentRecordId)) ||
+      (!currentRecordId && report.satsangDate === data.satsangDate)
+    );
+    const existing = existingIndex >= 0 ? reports[existingIndex] : null;
+    const fallbackId = `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+    const id = existing?.id || (window.crypto?.randomUUID ? `local-${window.crypto.randomUUID()}` : fallbackId);
+    const report = { ...data, id, createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
+    if (existingIndex >= 0) reports[existingIndex] = report;
+    else reports.push(report);
+    writeLocalReports(reports);
+    currentRecordId = id;
+    updateCurrentRecordIndicator();
+    showToast(`${existing ? '✅ Report updated' : '✅ Report saved'} on this device. ID: ${id}`, 'success');
+  }
+
+  async function checkConnection() {
+    if (FORCE_DEVICE_STORAGE) {
+      setStorageMode('local');
+      return false;
+    }
+
+    try {
+      const res = await fetch(apiUrl('/api/health'), { cache: 'no-store', signal: AbortSignal.timeout(3000) });
       const data = await res.json().catch(() => ({}));
       const dbConnected = res.ok && (data.database === 'connected' || data.status === 'ok');
 
       if (dbConnected) {
-        $('dbStatus').className = 'status-indicator status-online';
-        $('dbStatus').textContent = 'Connected';
+        setStorageMode('database');
         return true;
       }
     } catch (e) {
       console.error('Backend connection failed:', e);
     }
 
-    $('dbStatus').className = 'status-indicator status-offline';
-    $('dbStatus').textContent = 'Offline';
+    setStorageMode('local');
     return false;
   }
 
   async function fetchReports(endpoint = '/api/reports') {
+    if (storageMode !== 'database') return getLocalReportsForSearch(endpoint);
     try {
       const res = await fetch(apiUrl(endpoint));
       if (!res.ok) throw new Error('Failed to fetch');
@@ -671,10 +755,21 @@
     const data = {};
     fields.forEach(({ id }) => { const el = $(id); if (el) data[id] = el.value; });
 
+    isSaving = true;
     $('saveBtn').disabled = true;
     $('saveBtn').textContent = '⏳ Saving...';
 
     try {
+      if (!data.satsangDate || !data.satsangKarta) {
+        throw new Error('Please fill: ' + [!data.satsangDate && 'Satsang Date', !data.satsangKarta && 'Satsang Karta Name'].filter(Boolean).join(', '));
+      }
+
+      if (storageMode === 'local') {
+        saveReportLocally(data);
+        return;
+      }
+
+      if (storageMode !== 'database') throw new Error('Storage is still being checked. Please try again.');
       const res = await fetch(apiUrl('/api/reports'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -690,9 +785,9 @@
         updateCurrentRecordIndicator();
 
         if (result.updated) {
-          showToast('✅ Report updated successfully!', 'success');
+          showToast('✅ Report updated in the laptop database!', 'success');
         } else {
-          showToast('✅ Report saved successfully! ID: ' + newId, 'success');
+          showToast('✅ Report saved to the laptop database! ID: ' + newId, 'success');
         }
       } else {
         throw new Error(result.error || 'Save failed');
@@ -700,8 +795,9 @@
     } catch (e) {
       showToast('❌ Error: ' + e.message, 'error');
     } finally {
+      isSaving = false;
       $('saveBtn').disabled = false;
-      $('saveBtn').textContent = '💾 Submit & Save to DB';
+      setSaveButtonLabel();
     }
   }
 
@@ -782,6 +878,7 @@
   /* ── History Modal Functions ──────────────────────────────────── */
   let currentPage = 1;
   const pageSize = 20;
+  let currentRecordsEndpoint = '/api/reports';
 
   function openHistoryModal() {
     $('historyModal').classList.add('active');
@@ -796,7 +893,8 @@
     $('searchStartDate').value = '';
     $('searchEndDate').value = '';
     currentPage = 1;
-    await fetchAndDisplayRecords('/api/reports');
+    currentRecordsEndpoint = '/api/reports';
+    await fetchAndDisplayRecords(currentRecordsEndpoint);
   }
 
   async function searchRecords() {
@@ -808,7 +906,8 @@
     if (startDate) endpoint += `startDate=${formatDateForDB(startDate)}&`;
     if (endDate) endpoint += `endDate=${formatDateForDB(endDate)}`;
 
-    await fetchAndDisplayRecords(endpoint);
+    currentRecordsEndpoint = endpoint;
+    await fetchAndDisplayRecords(currentRecordsEndpoint);
   }
 
   async function fetchAndDisplayRecords(endpoint) {
@@ -901,11 +1000,21 @@
 
   async function goToPage(page) {
     currentPage = page;
-    await loadAllRecords();
+    await fetchAndDisplayRecords(currentRecordsEndpoint);
   }
 
   async function loadReportById(id) {
     try {
+      if (storageMode === 'local') {
+        const report = readLocalReports().find(item => String(item.id) === String(id));
+        if (!report) throw new Error('Report not found on this device');
+        loadReportData(report);
+        currentRecordId = String(report.id);
+        updateCurrentRecordIndicator();
+        closeHistoryModal();
+        return;
+      }
+
       const res = await fetch(apiUrl(`/api/reports/${id}`));
       if (!res.ok) throw new Error('Report not found');
       const data = await res.json();
@@ -928,6 +1037,20 @@
     if (!confirm(`Delete report #${id}? This cannot be undone.`)) return;
 
     try {
+      if (storageMode === 'local') {
+        const reports = readLocalReports();
+        const remaining = reports.filter(report => String(report.id) !== String(id));
+        if (remaining.length === reports.length) throw new Error('Report not found on this device');
+        writeLocalReports(remaining);
+        showToast('🗑️ Report deleted from this device', 'success');
+        if (String(currentRecordId) === String(id)) {
+          currentRecordId = null;
+          updateCurrentRecordIndicator();
+        }
+        await loadAllRecords();
+        return;
+      }
+
       const res = await fetch(apiUrl(`/api/reports/${id}`), {
         method: 'DELETE'
       });
