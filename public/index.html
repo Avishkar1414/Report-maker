@@ -685,6 +685,7 @@
 
   /* ── State ─────────────────────────────────────────────────── */
   let currentRecordId = null;
+  let currentRecordStorage = null;
   let storageMode = 'detecting';
   let isSaving = false;
   const LOCAL_REPORTS_KEY = 'rssb-kesnand-reports-v1';
@@ -783,17 +784,18 @@
   function saveReportLocally(data) {
     const reports = readLocalReports();
     const existingIndex = reports.findIndex(report =>
-      (currentRecordId && String(report.id) === String(currentRecordId)) ||
+      (currentRecordId && reportId(report) === String(currentRecordId)) ||
       (!currentRecordId && report.satsangDate === data.satsangDate)
     );
     const existing = existingIndex >= 0 ? reports[existingIndex] : null;
     const fallbackId = `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
-    const id = existing?.id || (window.crypto?.randomUUID ? `local-${window.crypto.randomUUID()}` : fallbackId);
+    const id = reportId(existing) || (window.crypto?.randomUUID ? `local-${window.crypto.randomUUID()}` : fallbackId);
     const report = { ...data, id, createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
     if (existingIndex >= 0) reports[existingIndex] = report;
     else reports.push(report);
     writeLocalReports(reports);
     currentRecordId = id;
+    currentRecordStorage = 'local';
     updateCurrentRecordIndicator();
     showToast(`${existing ? '✅ Report updated' : '✅ Report saved'} on this device. ID: ${id}`, 'success');
   }
@@ -806,8 +808,9 @@
 
     try {
       const res = await fetch(apiUrl('/api/health'), { cache: 'no-store', signal: AbortSignal.timeout(3000) });
-      const data = await res.json().catch(() => ({}));
-      const dbConnected = res.ok && (data.database === 'connected' || data.status === 'ok');
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') ? await res.json().catch(() => ({})) : {};
+      const dbConnected = res.ok && !res.redirected && data.database === 'connected';
 
       if (dbConnected) {
         setStorageMode('database');
@@ -817,19 +820,31 @@
       console.error('Backend connection failed:', e);
     }
 
+    // Once connected, keep records pinned to the laptop database during a
+    // temporary tunnel outage. Switching to local here makes DB rows appear
+    // to be missing when the user clicks them in the already-open history.
+    if (storageMode === 'database') {
+      $('dbStatus').className = 'status-indicator status-offline';
+      $('dbStatus').textContent = 'Laptop temporarily unreachable';
+      $('storageInfo').textContent = 'Reports remain in the laptop database. Check the tunnel connection and retry.';
+      return false;
+    }
+
     setStorageMode('local');
     return false;
   }
 
-  async function fetchReports(endpoint = '/api/reports') {
-    if (storageMode !== 'database') return getLocalReportsForSearch(endpoint);
+  async function fetchReports(endpoint = '/api/reports', source = storageMode) {
+    if (source !== 'database') return getLocalReportsForSearch(endpoint);
     try {
       const res = await fetch(apiUrl(endpoint));
-      if (!res.ok) throw new Error('Failed to fetch');
+      if (!res.ok || res.redirected || !(res.headers.get('content-type') || '').includes('application/json')) {
+        throw new Error('Laptop database could not be reached. Check the tunnel login and connection, then try again.');
+      }
       return await res.json();
     } catch (e) {
       console.error('Fetch error:', e);
-      return [];
+      throw e;
     }
   }
 
@@ -847,12 +862,13 @@
         throw new Error('Please fill: ' + [!data.satsangDate && 'Satsang Date', !data.satsangKarta && 'Satsang Karta Name'].filter(Boolean).join(', '));
       }
 
-      if (storageMode === 'local') {
+      const destination = currentRecordId && currentRecordStorage ? currentRecordStorage : storageMode;
+      if (destination === 'local') {
         saveReportLocally(data);
         return;
       }
 
-      if (storageMode !== 'database') throw new Error('Storage is still being checked. Please try again.');
+      if (destination !== 'database') throw new Error('Storage is still being checked. Please try again.');
       const res = await fetch(apiUrl('/api/reports'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -865,6 +881,7 @@
         // Use the MongoDB ID returned by the API for subsequent edits.
         const newId = result.report?.id ? String(result.report.id) : currentRecordId;
         currentRecordId = newId;
+        currentRecordStorage = 'database';
         updateCurrentRecordIndicator();
 
         if (result.updated) {
@@ -911,6 +928,7 @@
   function clearForm() {
     if (!confirm("Clear all data from form?")) return;
     currentRecordId = null;
+    currentRecordStorage = null;
     fields.forEach(({ id }) => {
       const el = $(id);
       if (el && !el.hasAttribute('readonly')) el.value = '';
@@ -922,6 +940,7 @@
 
   function createNewReport() {
     currentRecordId = null;
+    currentRecordStorage = null;
     fields.forEach(({ id }) => {
       const el = $(id);
       if (el && !el.hasAttribute('readonly')) el.value = '';
@@ -998,14 +1017,27 @@
     container.innerHTML = '<div class="loading">Loading records...</div>';
 
     try {
-      const records = await fetchReports(endpoint);
-      displayRecords(records);
-    } catch (e) {
-      container.innerHTML = '<div class="empty-state"><p>Failed to load records</p></div>';
+      if (storageMode === 'detecting') await checkConnection();
+      const source = storageMode === 'database' ? 'database' : 'local';
+      const records = await fetchReports(endpoint, source);
+      displayRecords(records, source);
+    } catch (error) {
+      container.innerHTML = `<div class="empty-state"><p>${escapeHtml(error.message || 'Failed to load records')}</p></div>`;
     }
   }
 
-  function displayRecords(records) {
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
+  }
+
+  function reportId(report) {
+    const id = report?.id ?? report?._id ?? report?.reportId;
+    return id == null ? '' : String(id);
+  }
+
+  function displayRecords(records, source) {
     const container = $('recordsContainer');
 
     if (!records || records.length === 0) {
@@ -1040,18 +1072,19 @@
         </thead>
         <tbody>
           ${pageRecords.map(r => {
-            const id = String(r.id);
+            const id = reportId(r);
+            if (!id) return '';
             return `
-            <tr onclick="loadReportById('${id}')">
+            <tr onclick="loadReportById('${id}', '${source}')">
               <td>#${id}</td>
               <td>${get(r, 'satsangDate') || '-'}</td>
               <td>${get(r, 'satsangKarta') || '-'}</td>
               <td>${get(r, 'totalAttendance') || 0}</td>
               <td>${get(r, 'totalVehicle') || 0}</td>
               <td class="actions" onclick="event.stopPropagation()">
-                <button class="btn-view" onclick="loadReportById('${id}')">View</button>
-                <button class="btn-edit" onclick="editReportById('${id}')">Edit</button>
-                <button class="btn-delete" onclick="deleteReportById('${id}')">Delete</button>
+                <button class="btn-view" onclick="loadReportById('${id}', '${source}')">View</button>
+                <button class="btn-edit" onclick="editReportById('${id}', '${source}')">Edit</button>
+                <button class="btn-delete" onclick="deleteReportById('${id}', '${source}')">Delete</button>
               </td>
             </tr>
           `;}).join('')}
@@ -1086,24 +1119,28 @@
     await fetchAndDisplayRecords(currentRecordsEndpoint);
   }
 
-  async function loadReportById(id) {
+  async function loadReportById(id, source = storageMode) {
     try {
-      if (storageMode === 'local') {
-        const report = readLocalReports().find(item => String(item.id) === String(id));
+      if (source === 'local') {
+        const report = readLocalReports().find(item => reportId(item) === String(id));
         if (!report) throw new Error('Report not found on this device');
         loadReportData(report);
-        currentRecordId = String(report.id);
+        currentRecordId = reportId(report);
+        currentRecordStorage = 'local';
         updateCurrentRecordIndicator();
         closeHistoryModal();
         return;
       }
 
       const res = await fetch(apiUrl(`/api/reports/${id}`));
-      if (!res.ok) throw new Error('Report not found');
+      if (!res.ok || res.redirected || !(res.headers.get('content-type') || '').includes('application/json')) {
+        throw new Error('Report could not be loaded from the laptop database. Check the tunnel connection and retry.');
+      }
       const data = await res.json();
       console.log('API returned:', data);
       loadReportData(data);
       currentRecordId = String(id);
+      currentRecordStorage = 'database';
       updateCurrentRecordIndicator();
       closeHistoryModal();
     } catch (e) {
@@ -1112,22 +1149,23 @@
     }
   }
 
-  async function editReportById(id) {
-    await loadReportById(id);
+  async function editReportById(id, source = storageMode) {
+    await loadReportById(id, source);
   }
 
-  async function deleteReportById(id) {
+  async function deleteReportById(id, source = storageMode) {
     if (!confirm(`Delete report #${id}? This cannot be undone.`)) return;
 
     try {
-      if (storageMode === 'local') {
+      if (source === 'local') {
         const reports = readLocalReports();
-        const remaining = reports.filter(report => String(report.id) !== String(id));
+        const remaining = reports.filter(report => reportId(report) !== String(id));
         if (remaining.length === reports.length) throw new Error('Report not found on this device');
         writeLocalReports(remaining);
         showToast('🗑️ Report deleted from this device', 'success');
         if (String(currentRecordId) === String(id)) {
           currentRecordId = null;
+          currentRecordStorage = null;
           updateCurrentRecordIndicator();
         }
         await loadAllRecords();
@@ -1142,6 +1180,7 @@
         showToast('🗑️ Report deleted', 'success');
         if (String(currentRecordId) === String(id)) {
           currentRecordId = null;
+          currentRecordStorage = null;
           updateCurrentRecordIndicator();
         }
         loadAllRecords();
@@ -1163,6 +1202,7 @@
     const formattedDate = formatDateForDB(dateInput);
     $('satsangDate').value = formattedDate;
     currentRecordId = null;
+    currentRecordStorage = null;
     updateCurrentRecordIndicator();
     closeHistoryModal();
     showToast(`📅 Date set to ${formattedDate}`, 'info');
