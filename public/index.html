@@ -55,6 +55,8 @@
     .header-btn.history-btn:hover { background: #138496; }
     .header-btn.new-btn { background: #28a745; }
     .header-btn.new-btn:hover { background: #218838; }
+    .header-btn.laptop-btn { background: #5b55c8; }
+    .header-btn.laptop-btn:hover { background: #4842ae; }
 
     /* ── Screen form ── */
     #printArea {
@@ -230,6 +232,32 @@
       padding: 20px;
       overflow-y: auto;
       flex: 1;
+    }
+
+    .tunnel-help {
+      margin: 0 0 14px;
+      line-height: 1.5;
+      color: #444;
+    }
+
+    .tunnel-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+
+    .tunnel-error {
+      min-height: 18px;
+      color: #b02a37;
+      margin: 0 0 10px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
     }
 
     /* Search Bar */
@@ -447,6 +475,7 @@
     <div class="header-actions">
       <button class="header-btn new-btn" onclick="createNewReport()">➕ New Entry</button>
       <button class="header-btn history-btn" onclick="openHistoryModal()">📋 View Records</button>
+      <button class="header-btn laptop-btn" id="useLaptopStorageBtn" type="button" onclick="openLaptopStorageModal()" hidden>💻 Use laptop storage</button>
     </div>
   </div>
 
@@ -454,6 +483,26 @@
   <div class="connection-bar">
     <span>Storage: <span id="dbStatus" class="status-indicator status-offline">Checking...</span></span>
     <span id="storageInfo">Checking whether laptop storage is available…</span>
+  </div>
+
+  <div class="modal-overlay" id="laptopStorageModal" role="dialog" aria-modal="true" aria-labelledby="laptopStorageTitle">
+    <div class="modal" style="max-width: 520px">
+      <div class="modal-header">
+        <h3 id="laptopStorageTitle">💻 Save reports to laptop</h3>
+        <button class="modal-close" type="button" onclick="closeLaptopStorageModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="tunnel-help">Enter the current Cloudflare Quick Tunnel URL for your laptop, then connect. Cloudflare may ask for an email PIN before reports can be saved to the laptop database.</p>
+        <p class="tunnel-help"><strong>Existing reports stay in this browser.</strong> They are not transferred to the laptop automatically. Download a PDF before switching if you need a separate copy.</p>
+        <label for="laptopTunnelUrl">Laptop tunnel URL</label>
+        <input class="tunnel-input" type="url" id="laptopTunnelUrl" placeholder="https://your-name.trycloudflare.com" autocomplete="url" spellcheck="false">
+        <p class="tunnel-error" id="laptopTunnelError" role="alert"></p>
+        <div class="modal-actions">
+          <button class="header-btn" type="button" onclick="closeLaptopStorageModal()">Cancel</button>
+          <button class="header-btn laptop-btn" type="button" onclick="connectToLaptopStorage()">Connect to laptop</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ── Current Record Indicator ── -->
@@ -556,6 +605,40 @@
     ? 'http://localhost:3000'
     : '';
   const FORCE_DEVICE_STORAGE = window.location.hostname.endsWith('.vercel.app');
+  const LAPTOP_TUNNEL_STORAGE_KEY = 'report-maker-laptop-tunnel-url';
+  const DEFAULT_LAPTOP_TUNNEL_URL = 'https://including-heather-expenditures-licensed.trycloudflare.com';
+
+  function openLaptopStorageModal() {
+    const savedUrl = localStorage.getItem(LAPTOP_TUNNEL_STORAGE_KEY);
+    $('laptopTunnelUrl').value = savedUrl || DEFAULT_LAPTOP_TUNNEL_URL;
+    $('laptopTunnelError').textContent = '';
+    $('laptopStorageModal').classList.add('active');
+    $('laptopTunnelUrl').focus();
+  }
+
+  function closeLaptopStorageModal() {
+    $('laptopStorageModal').classList.remove('active');
+  }
+
+  function connectToLaptopStorage() {
+    const error = $('laptopTunnelError');
+    let target;
+    try {
+      target = new URL($('laptopTunnelUrl').value.trim());
+    } catch {
+      error.textContent = 'Enter a valid HTTPS Cloudflare Quick Tunnel URL.';
+      return;
+    }
+
+    if (target.protocol !== 'https:' || !(target.hostname === 'trycloudflare.com' || target.hostname.endsWith('.trycloudflare.com')) || target.username || target.password) {
+      error.textContent = 'Use an HTTPS URL ending in .trycloudflare.com.';
+      return;
+    }
+
+    const tunnelOrigin = target.origin;
+    localStorage.setItem(LAPTOP_TUNNEL_STORAGE_KEY, tunnelOrigin);
+    window.location.assign(tunnelOrigin);
+  }
 
   function apiUrl(path) {
     return `${API_BASE}${path}`;
@@ -1205,6 +1288,7 @@
 
   /* ── Initialize ─────────────────────────────────────────────── */
   window.onload = () => {
+    if (FORCE_DEVICE_STORAGE) $('useLaptopStorageBtn').hidden = false;
     // Check database connection
     checkConnection();
     setInterval(checkConnection, 30000); // Check every 30 seconds
@@ -1216,12 +1300,19 @@
 
   // Close modal on escape key
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeHistoryModal();
+    if (e.key === 'Escape') {
+      if ($('laptopStorageModal').classList.contains('active')) closeLaptopStorageModal();
+      else closeHistoryModal();
+    }
   });
 
   // Close modal on overlay click
   $('historyModal').addEventListener('click', (e) => {
     if (e.target.id === 'historyModal') closeHistoryModal();
+  });
+
+  $('laptopStorageModal').addEventListener('click', (e) => {
+    if (e.target.id === 'laptopStorageModal') closeLaptopStorageModal();
   });
 </script>
 

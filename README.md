@@ -25,6 +25,8 @@ Open <http://localhost:3000>. For a production start, use `npm start`.
 
 The Vercel site (`*.vercel.app`) always uses browser-local storage. Each visitor can create, save, search, edit, and delete reports in that browser without connecting to the laptop. These reports stay in that browser on that device and do not sync to other devices. Use **Download PDF** to save a file separately.
 
+On Vercel, **Use laptop storage** opens a dialog for the current Cloudflare Quick Tunnel URL and redirects to that laptop app. The URL is remembered in that browser and can be updated when a Quick Tunnel restarts, because its address changes. The visitor may need to complete Cloudflare's email PIN check. Reports saved in Vercel's browser storage are not copied to the laptop database when switching.
+
 The laptop app selects MongoDB storage only when its API reports that MongoDB is connected. Through the Cloudflare Quick Tunnel, the save button writes to the laptop's database. Visitors must first enter an email allowed by `TUNNEL_ALLOWED_EMAIL` and the one-time PIN sent to that address. If MongoDB is unavailable, the app switches to browser-local storage and labels it **This device**.
 
 For a static Vercel deployment, use the `public` directory as the output directory (Framework Preset: **Other**). Do not configure MongoDB credentials on Vercel. Vercel visitors' reports are stored only in their browser; the laptop database is reachable only through the laptop app and its protected tunnel.
