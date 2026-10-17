@@ -27,8 +27,13 @@ Open <http://localhost:3000>. For a production start, use `npm start`.
 | --- | --- | --- |
 | `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/reports` |
 | `PORT` | HTTP port | `3000` |
+| `TUNNEL_ALLOWED_EMAIL` | Email allowed to open the internet tunnel; Cloudflare sends a one-time code | Set this in `.env` before `npm run tunnel` |
 
 Keep `.env` out of version control. `.env.example` contains only safe sample configuration.
+
+## Share access from the internet
+
+Start the app with `npm start`, set `TUNNEL_ALLOWED_EMAIL` in `.env`, then run `npm run tunnel` in a second terminal. Cloudflare sends a one-time PIN to the allowed email before forwarding visitors to the app. Quick tunnel URLs are temporary and change when the tunnel restarts. Keep the laptop, MongoDB, app, and tunnel online while reports are being submitted.
 
 ## API
 

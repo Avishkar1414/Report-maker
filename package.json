@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "tunnel": "cloudflared tunnel --url http://localhost:3000"
+    "tunnel": "node scripts/tunnel.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
