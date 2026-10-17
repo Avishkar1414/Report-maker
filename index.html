@@ -549,12 +549,15 @@
 
 <script>
   /* ── Configuration ──────────────────────────────────────────── */
-  // Use the same origin (works when served from the same server)
-const API_BASE = 'https://report-maker-2zlu.onrender.com';
+  // Same origin when served by Express (localhost or Cloudflare Tunnel).
+  // file:// fallback talks to the local backend.
+  const API_BASE = (window.location.protocol === 'file:')
+    ? 'http://localhost:3000'
+    : '';
 
-function apiUrl(path) {
-  return `${API_BASE}${path}`;
-}
+  function apiUrl(path) {
+    return `${API_BASE}${path}`;
+  }
 
   /* ── Data definitions ─────────────────────────────────────────── */
   const fields = [
@@ -633,22 +636,24 @@ function apiUrl(path) {
 
   /* ── API Functions ──────────────────────────────────────────── */
   async function checkConnection() {
-  try {
-    const res = await fetch(apiUrl('/api/health'));
+    try {
+      const res = await fetch(apiUrl('/api/health'), { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      const dbConnected = res.ok && (data.database === 'connected' || data.status === 'ok');
 
-    if (res.ok) {
-      $('dbStatus').className = 'status-indicator status-online';
-      $('dbStatus').textContent = 'Connected';
-      return true;
+      if (dbConnected) {
+        $('dbStatus').className = 'status-indicator status-online';
+        $('dbStatus').textContent = 'Connected';
+        return true;
+      }
+    } catch (e) {
+      console.error('Backend connection failed:', e);
     }
-  } catch (e) {
-    console.error('Backend connection failed:', e);
-  }
 
-  $('dbStatus').className = 'status-indicator status-offline';
-  $('dbStatus').textContent = 'Offline';
-  return false;
-}
+    $('dbStatus').className = 'status-indicator status-offline';
+    $('dbStatus').textContent = 'Offline';
+    return false;
+  }
 
   async function fetchReports(endpoint = '/api/reports') {
     try {
